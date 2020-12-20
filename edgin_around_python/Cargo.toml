@@ -1,0 +1,13 @@
+[package]
+name = "edgin_around_python"
+version = "0.1.1"
+authors = ["Wojciech Kluczka <wojciech.kluczka@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "edgin_around_python"
+crate-type = ["cdylib"]
+
+[dependencies]
+edgin_around_rendering = { version = "0.1.1" }
+pyo3 = { version = "0.12.3", features = ["extension-module"] }

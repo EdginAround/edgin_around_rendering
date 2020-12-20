@@ -1,0 +1,7 @@
+[workspace]
+members = ["edgin_around_rendering", "edgin_around_python", "edgin_around_android"]
+
+[patch.crates-io]
+edgin_around_rendering = { path = 'edgin_around_rendering' }
+edgin_around_python = { path = 'edgin_around_python' }
+edgin_around_android = { path = 'edgin_around_android' }

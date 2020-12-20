@@ -1,0 +1,17 @@
+[package]
+name = "edgin_around_rendering"
+version = "0.1.1"
+authors = ["Wojciech Kluczka <wojciech.kluczka@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "edgin_around_rendering"
+
+[dependencies]
+gl = { version = "0.14.0" }
+egl = { version = "0.2.7" }
+log = { version = "0.4.14" }
+ndarray = { version = "0.13.1" }
+png = { version = "0.16.7" }
+serde = { version = "1.0.117", features = ["derive"] }
+serde_yaml = { version = "0.8.14" }

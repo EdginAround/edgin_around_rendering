@@ -1,0 +1,15 @@
+[package]
+name = "edgin_around_android"
+version = "0.1.1"
+authors = ["Wojciech Kluczka <wojciech.kluczka@gmail.com>"]
+edition = "2018"
+
+[lib]
+name = "edgin_around_android"
+crate-type = ["cdylib"]
+
+[dependencies]
+android_logger = { version = "0.10.0" }
+edgin_around_rendering = { version = "0.1.1" }
+jni = { version = "0.19", default-features = false }
+log = { version = "0.4.14" }
