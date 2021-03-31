@@ -1,0 +1,79 @@
+name: build
+on: [push]
+
+jobs:
+  fmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Toolchain setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+      - name: Format
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: -- --check
+
+  build_debug:
+    runs-on: ubuntu-latest
+    needs: fmt
+    steps:
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -y -qq
+          sudo apt-get install -y -qq libegl1-mesa libegl1-mesa-dev
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Toolchain setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+
+  build_android:
+    runs-on: ubuntu-latest
+    needs: build_debug
+    strategy:
+      matrix:
+        arch:
+          - android: arm64-v8a
+            rust: aarch64-linux-android
+          - android: armeabi
+            rust: armv7-linux-androideabi
+          - android: x86_64
+            rust: x86_64-linux-android
+          - android: x86
+            rust: i686-linux-android
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Toolchain setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          target: ${{ matrix.arch.rust }}
+          override: true
+      - name: Build
+        uses: actions-rs/cargo@v1
+        with:
+          use-cross: true
+          command: build
+          args: --release -p edgin_around_android --target ${{ matrix.arch.rust }}
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts/${{ matrix.arch.android }} && \
+          cp -r target/${{ matrix.arch.rust }}/release/libedgin_around_android.so \
+                artifacts/${{ matrix.arch.android }}
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: edgin_around_android
+          path: artifacts
+

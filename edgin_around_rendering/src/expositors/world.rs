@@ -34,6 +34,7 @@ pub struct WorldExpositor {
     tilt: defs::Radian,
 
     size: (usize, usize),
+    #[allow(dead_code)]
     highlight_point: Option<(usize, usize)>,
     highlighted_actor_id: Option<ActorId>,
 
