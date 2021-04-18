@@ -110,6 +110,17 @@ impl Point {
         let (_r, lat, lon) = spherical_to_geographical_radians(1.0, self.theta, self.phi);
         Coordinate::new(lat, lon)
     }
+
+    pub fn to_point3d(&self, altitude: f32) -> Point3D {
+        let (x, y, z) = spherical_to_cartesian(altitude, self.theta, self.phi);
+        Point3D::new(x, y, z)
+    }
+
+    pub fn distance(point1: &Point, point2: &Point, altitude: f32) -> f32 {
+        let point3d1 = point1.to_point3d(altitude);
+        let point3d2 = point2.to_point3d(altitude);
+        Point3D::distance(&point3d1, &point3d2)
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -146,6 +157,13 @@ impl Point3D {
 
     pub fn length(&self) -> f32 {
         (self.x * self.x + self.y * self.y + self.z * self.z).sqrt()
+    }
+
+    pub fn distance(point1: &Point3D, point2: &Point3D) -> f32 {
+        let dx = point1.x - point2.x;
+        let dy = point1.y - point2.y;
+        let dz = point1.z - point2.z;
+        (dx * dx + dy * dy + dz * dz).sqrt()
     }
 
     pub fn enlongated(&self, new_length: f32) -> Self {

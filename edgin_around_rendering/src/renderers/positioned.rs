@@ -33,7 +33,6 @@ pub struct PositionedRenderer {
     model: Matrix3D,
     cam: CameraPerspective,
     highlight: bool,
-    is_visible: bool,
 }
 
 impl PositionedRenderer {
@@ -52,7 +51,6 @@ impl PositionedRenderer {
             model: Matrix3D::identity(),
             cam: CameraPerspective::default(),
             highlight: false,
-            is_visible: true,
         };
 
         if let Some(position) = position {
@@ -64,14 +62,6 @@ impl PositionedRenderer {
 
     pub fn set_highlight(&mut self, highlight: bool) {
         self.highlight = highlight;
-    }
-
-    pub fn set_is_visible(&mut self, is_visible: bool) {
-        self.is_visible = is_visible;
-    }
-
-    pub fn get_is_visible(&self) -> bool {
-        self.is_visible
     }
 
     pub fn change_position(&mut self, position: Position) {
@@ -90,7 +80,11 @@ impl PositionedRenderer {
         self.calculate_screen_bounds();
     }
 
-    pub fn select_animation(&mut self, name: &'static str) {
+    pub fn unset_position(&mut self) {
+        self.position = None
+    }
+
+    pub fn select_animation(&mut self, name: &str) {
         self.renderer.select_animation(name);
     }
 

@@ -53,6 +53,10 @@ impl Scene {
         self.scene.configure(hero_actor_id, elevation.elevation_function)
     }
 
+    pub fn get_hero_id(&self) -> ActorId {
+        self.scene.get_hero_id()
+    }
+
     pub fn create_actors(&mut self, mut actors: Vec<Actor>) {
         let actors = actors.drain(..).map(|a| a.actor).collect();
         self.scene.create_actors(&actors)
@@ -68,6 +72,14 @@ impl Scene {
 
     pub fn get_radius(&self) -> f32 {
         self.scene.get_radius()
+    }
+
+    pub fn find_closest_actors(
+        &self,
+        reference_position: &crate::utils::Point,
+        max_distance: f32,
+    ) -> Vec<ActorId> {
+        self.scene.find_closest_actors(&reference_position.point, max_distance)
     }
 
     pub fn set_actor_position(&mut self, actor_id: ActorId, position: crate::utils::Point) {

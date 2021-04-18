@@ -1,4 +1,4 @@
-use std::{collections::HashMap, f32::consts::PI};
+use std::{cmp::Ordering, collections::HashMap, f32::consts::PI};
 
 use crate::utils::{coordinates::Point, errors as err, ids::ActorId};
 
@@ -149,6 +149,10 @@ impl Scene {
         self.elevation.evaluate(point)
     }
 
+    pub fn get_hero_id(&self) -> ActorId {
+        self.hero_actor_id
+    }
+
     pub fn get_actor(&self, actor_id: ActorId) -> Option<&Actor> {
         self.actors.get(&actor_id)
     }
@@ -190,7 +194,29 @@ impl Scene {
 
     pub fn hide_actors(&mut self, actor_ids: &Vec<ActorId>) {
         for id in actor_ids {
-            self.get_actor(*id).cloned().expect(err::NOT_EXISTING_ACTOR).hide();
+            if let Some(actor) = self.get_actor_mut(*id) {
+                actor.hide();
+            }
         }
+    }
+
+    pub fn find_closest_actors(
+        &self,
+        reference_position: &Point,
+        max_distance: f32,
+    ) -> Vec<ActorId> {
+        let mut actors = Vec::<(ActorId, f32)>::new();
+        for actor in self.actors.values() {
+            if let Some(actor_position) = actor.get_position() {
+                let current_distance =
+                    Point::distance(reference_position, actor_position, self.get_radius());
+                if current_distance < max_distance {
+                    actors.push((actor.get_id(), current_distance));
+                }
+            }
+        }
+
+        actors.sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(Ordering::Equal));
+        actors.iter().map(|a| a.0).collect()
     }
 }

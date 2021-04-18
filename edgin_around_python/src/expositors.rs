@@ -38,6 +38,14 @@ impl WorldExpositor {
         self.world.get_highlighted_actor_id()
     }
 
+    pub fn set_highlighted_actor_id(&mut self, actor_id: ActorId) {
+        self.world.set_highlighted_actor_id(Some(actor_id))
+    }
+
+    pub fn remove_highlight(&mut self) {
+        self.world.set_highlighted_actor_id(None)
+    }
+
     pub fn zoom_by(&mut self, zoom: Zoom) {
         self.world.zoom_by(zoom)
     }
@@ -50,10 +58,6 @@ impl WorldExpositor {
         self.world.tilt_by(angle)
     }
 
-    pub fn highlight(&mut self, x: usize, y: usize) {
-        self.world.highlight(x, y)
-    }
-
     pub fn create_renderers(&mut self, mut actors: Vec<crate::game::Actor>) {
         let actors = actors.drain(..).map(|a| a.actor).collect();
         self.world.create_renderers(&actors)
@@ -61,6 +65,10 @@ impl WorldExpositor {
 
     pub fn delete_renderers(&mut self, ids: Vec<ActorId>) {
         self.world.delete_renderers(&ids)
+    }
+
+    pub fn play_animation(&mut self, actor_id: ActorId, animation_name: String) {
+        self.world.play_animation(actor_id, &animation_name)
     }
 }
 

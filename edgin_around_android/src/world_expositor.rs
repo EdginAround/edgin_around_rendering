@@ -76,6 +76,27 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_ge
 
 #[no_mangle]
 #[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_setHighlightedActorId(
+    env: JNIEnv,
+    object: JObject,
+    actor_id: common::ActorIdJni,
+) {
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    world.set_highlighted_actor_id(Some(actor_id as ActorId))
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_removeHighlight(
+    env: JNIEnv,
+    object: JObject,
+) {
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    world.set_highlighted_actor_id(None)
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
 pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_zoomBy(
     env: JNIEnv,
     object: JObject,
@@ -105,18 +126,6 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_ti
 ) {
     let mut world = common::get_holder::<WorldExpositor>(&env, &object);
     world.tilt_by(angle)
-}
-
-#[no_mangle]
-#[allow(non_snake_case)]
-pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_highlight(
-    env: JNIEnv,
-    object: JObject,
-    x: jint,
-    y: jint,
-) {
-    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
-    world.highlight(x as usize, y as usize)
 }
 
 #[no_mangle]
@@ -154,4 +163,17 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_de
         actor_ids_vec.push(*actor_ids_data.as_ptr().offset(i) as ActorId)
     }
     world.delete_renderers(&actor_ids_vec)
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_playAnimation(
+    env: JNIEnv,
+    object: JObject,
+    actor_id: common::ActorIdJni,
+    animation_name: JString,
+) {
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    let animation_name = common::make_string(&env, animation_name).expect(err::JNI_MAKE_STRING);
+    world.play_animation(actor_id as ActorId, &animation_name)
 }

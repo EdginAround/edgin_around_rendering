@@ -34,8 +34,6 @@ pub struct WorldExpositor {
     tilt: defs::Radian,
 
     size: (usize, usize),
-    #[allow(dead_code)]
-    highlight_point: Option<(usize, usize)>,
     highlighted_actor_id: Option<ActorId>,
 
     program_ground: gl::types::GLuint,
@@ -69,7 +67,6 @@ impl WorldExpositor {
             bearing: INITIAL_BEARING,
             tilt: INITIAL_TILT,
             size,
-            highlight_point: None,
             highlighted_actor_id: None,
             program_ground: defs::UNONE,
             program_entities: defs::UNONE,
@@ -113,6 +110,10 @@ impl WorldExpositor {
         self.highlighted_actor_id
     }
 
+    pub fn set_highlighted_actor_id(&mut self, actor_id: Option<ActorId>) {
+        self.highlighted_actor_id = actor_id;
+    }
+
     pub fn zoom_by(&mut self, zoom: defs::Zoom) {
         let new_zoom = self.zoom - zoom;
 
@@ -137,13 +138,6 @@ impl WorldExpositor {
         if (TILT_BOUNDS.0 < new_tilt) && (new_tilt < TILT_BOUNDS.1) {
             self.tilt = new_tilt;
         }
-    }
-
-    pub fn highlight(&mut self, x: usize, y: usize) {
-        self.highlight_point = Some((
-            (2.0 * (x as f64) / (self.size.0 as f64) - 1.0).round() as usize,
-            (2.0 * (y as f64) / (self.size.1 as f64) - 1.0).round() as usize,
-        ));
     }
 
     pub fn create_renderers(&mut self, actors: &Vec<game::Actor>) {
@@ -172,6 +166,12 @@ impl WorldExpositor {
 
     pub fn delete_renderers(&mut self, ids: &Vec<ActorId>) {
         self.renderers_entities.drain_filter(|renderer| ids.contains(&renderer.get_actor_id()));
+    }
+
+    pub fn play_animation(&mut self, actor_id: ActorId, animation_name: &str) {
+        if let Some(renderer) = self.find_renderer(actor_id) {
+            renderer.select_animation(animation_name);
+        }
     }
 }
 
@@ -210,7 +210,8 @@ impl WorldExpositor {
         // Update entities with bearing and sort them by distance from the camera
         for renderer in self.renderers_entities.iter_mut() {
             let actor = scene.get_actor(renderer.get_actor_id()).expect(err::NOT_EXISTING_ACTOR);
-            renderer.set_is_visible(actor.is_visible());
+            renderer.set_highlight(Some(renderer.get_actor_id()) == self.highlighted_actor_id);
+
             if let Some(position) = actor.get_position() {
                 let elevation = scene.get_elevation(position);
                 let position = coordinates::Position::new(
@@ -220,6 +221,8 @@ impl WorldExpositor {
                     elevation,
                 );
                 renderer.change_position_and_view(position, self.view.clone());
+            } else {
+                renderer.unset_position();
             }
         }
         self.renderers_entities.sort_by(|a, b| {
@@ -233,7 +236,13 @@ impl WorldExpositor {
         }
 
         for renderer in self.renderers_entities.iter_mut() {
-            renderer.render(self.loc_entities_highlight, self.loc_entities_model, &self.sprites);
+            if renderer.is_visible() {
+                renderer.render(
+                    self.loc_entities_highlight,
+                    self.loc_entities_model,
+                    &self.sprites,
+                );
+            }
         }
 
         unsafe { gl::UseProgram(0) };
@@ -325,5 +334,14 @@ impl WorldExpositor {
             * geometry::Matrix3D::rotation_x(-self.theta)
             * geometry::Matrix3D::rotation_z(-self.phi)
             * geometry::Matrix3D::rotation_x(0.5 * PI)
+    }
+
+    fn find_renderer(&mut self, actor_id: ActorId) -> Option<&mut renderers::PositionedRenderer> {
+        for renderer in self.renderers_entities.iter_mut() {
+            if renderer.get_actor_id() == actor_id {
+                return Some(renderer);
+            }
+        }
+        None
     }
 }

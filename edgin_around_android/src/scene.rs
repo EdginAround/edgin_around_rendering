@@ -36,6 +36,16 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_configure(
 
 #[no_mangle]
 #[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_getHeroId(
+    env: JNIEnv,
+    object: JObject,
+) -> common::ActorIdJni {
+    let scene = common::get_holder::<Scene>(&env, &object);
+    scene.get_hero_id() as common::ActorIdJni
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
 pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_createActors(
     env: JNIEnv,
     object: JObject,
@@ -97,6 +107,27 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_getRadius(
 ) -> jfloat {
     let scene = common::get_holder::<Scene>(&env, &object);
     scene.get_radius()
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_findClosestActors(
+    env: JNIEnv,
+    object: JObject,
+    theta: jfloat,
+    phi: jfloat,
+    max_distance: jfloat,
+) -> common::ActorIdArrayJni {
+    let reference_point = Point::new(theta, phi);
+    let scene = common::get_holder::<Scene>(&env, &object);
+    let ids = scene
+        .find_closest_actors(&reference_point, max_distance)
+        .iter()
+        .map(|id| *id as common::ActorIdJni)
+        .collect::<Vec<common::ActorIdJni>>();
+    let result = env.new_long_array(ids.len() as i32).expect(err::JNI_NEW_ARRAY);
+    env.set_long_array_region(result, 0, ids.as_slice()).expect(err::JNI_ARRAY_REGION);
+    result
 }
 
 #[no_mangle]
