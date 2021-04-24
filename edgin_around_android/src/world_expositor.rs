@@ -177,3 +177,30 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_pl
     let animation_name = common::make_string(&env, animation_name).expect(err::JNI_MAKE_STRING);
     world.play_animation(actor_id as ActorId, &animation_name)
 }
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_attachActor(
+    env: JNIEnv,
+    object: JObject,
+    hook_name: JString,
+    base_actor_id: common::ActorIdJni,
+    attached_actor_id: common::ActorIdJni,
+) {
+    let hook_name = common::make_string(&env, hook_name).expect(err::JNI_MAKE_STRING);
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    world.attach_actor(hook_name, base_actor_id as ActorId, Some(attached_actor_id as ActorId))
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_detachActor(
+    env: JNIEnv,
+    object: JObject,
+    hook_name: JString,
+    base_actor_id: common::ActorIdJni,
+) {
+    let hook_name = common::make_string(&env, hook_name).expect(err::JNI_MAKE_STRING);
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    world.attach_actor(hook_name, base_actor_id as ActorId, None)
+}

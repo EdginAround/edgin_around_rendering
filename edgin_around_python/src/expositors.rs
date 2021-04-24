@@ -70,6 +70,15 @@ impl WorldExpositor {
     pub fn play_animation(&mut self, actor_id: ActorId, animation_name: String) {
         self.world.play_animation(actor_id, &animation_name)
     }
+
+    pub fn attach_actor(
+        &mut self,
+        hook_name: String,
+        base_actor_id: ActorId,
+        attached_actor_id: Option<ActorId>,
+    ) {
+        self.world.attach_actor(hook_name, base_actor_id, attached_actor_id)
+    }
 }
 
 #[pyclass]

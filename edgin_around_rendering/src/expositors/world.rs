@@ -2,10 +2,7 @@ use std::{cmp::Ordering, f32::consts::PI};
 
 use crate::{
     animations, game, renderers,
-    utils::{
-        coordinates, defs, errors as err, figures, geometry, graphics,
-        ids::{ActorId, MediumId},
-    },
+    utils::{coordinates, defs, errors as err, figures, geometry, graphics, ids::ActorId},
 };
 
 const INITIAL_THETA: f32 = 0.0;
@@ -142,10 +139,9 @@ impl WorldExpositor {
 
     pub fn create_renderers(&mut self, actors: &Vec<game::Actor>) {
         for actor in actors.iter() {
-            let (skeleton, skin_id) = self.load_skeleton_and_skin(actor.get_entity_name());
+            let sprite = self.load_sprite(actor.get_entity_name());
 
             // TODO: Cache loaded skeletons.
-
             let position = if let Some(point) = actor.get_position() {
                 Some(coordinates::Position::new(point.theta, point.phi, self.bearing, self.radius))
             } else {
@@ -154,8 +150,7 @@ impl WorldExpositor {
 
             let renderer = renderers::PositionedRenderer::new(
                 actor.get_id(),
-                skeleton,
-                skin_id,
+                sprite,
                 position,
                 geometry::Matrix3D::identity(),
             );
@@ -171,6 +166,28 @@ impl WorldExpositor {
     pub fn play_animation(&mut self, actor_id: ActorId, animation_name: &str) {
         if let Some(renderer) = self.find_renderer(actor_id) {
             renderer.select_animation(animation_name);
+        }
+    }
+
+    pub fn attach_actor(
+        &mut self,
+        hook_name: String,
+        target_actor_id: ActorId,
+        source_actor_id: Option<ActorId>,
+    ) {
+        let source_sprite: Option<animations::Sprite> =
+            source_actor_id.and_then(|id| self.find_renderer(id)).map(|r| r.get_sprite().clone());
+
+        if let Some(target_renderer) = self.find_renderer(target_actor_id) {
+            let target_sprite = target_renderer.get_sprite_mut();
+            if let Some(mut source_sprite) = source_sprite {
+                source_sprite
+                    .select_animation(animations::ANIMATION_NAME_HELD)
+                    .expect(err::SAML_NOT_EXISTING_ANIMATION);
+                target_sprite.attach_sprite(hook_name, source_sprite);
+            } else {
+                target_sprite.detach_sprite(&hook_name);
+            }
         }
     }
 }
@@ -236,7 +253,7 @@ impl WorldExpositor {
         }
 
         for renderer in self.renderers_entities.iter_mut() {
-            if renderer.is_visible() {
+            if renderer.has_position() {
                 renderer.render(
                     self.loc_entities_highlight,
                     self.loc_entities_model,
@@ -302,15 +319,12 @@ impl WorldExpositor {
 }
 
 impl WorldExpositor {
-    fn load_skeleton_and_skin(&mut self, name: &str) -> (animations::Skeleton, MediumId) {
+    fn load_sprite(&mut self, name: &str) -> animations::Sprite {
         // TODO: Load only if needed.
         let saml_path = self.sprites.get_sprites_dir().join(name).join(name).with_extension("saml");
         let parser = animations::Parser::new(&saml_path);
-        let skeleton = parser.to_skeleton();
-
         let skin_id = self.sprites.load_skin_if_needed(name, &parser.get_sources());
-
-        (skeleton, skin_id)
+        animations::Sprite::new(parser.to_skeleton(), skin_id)
     }
 
     fn update_lookat(&mut self, scene: &game::Scene) {

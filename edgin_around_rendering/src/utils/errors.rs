@@ -13,3 +13,4 @@ pub const SAML_NOT_EXISTING_POSE: &str = "requested pose does not exist";
 pub const SAML_NOT_EXISTING_SKELETON: &str = "requested skeleton does not exist";
 pub const SAML_NOT_EXISTING_SOURCE: &str = "requested source does not exist";
 pub const DEFAULT_ANIMATION_FAILED: &str = "failed to activate default animation";
+pub const LOCK_RENDERERS: &str = "failed to lock renderers mutex";

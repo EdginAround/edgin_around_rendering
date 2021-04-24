@@ -1,29 +1,15 @@
 use std::f32::consts::PI;
 
 use crate::{
-    animations::Skeleton,
+    animations::Sprite,
     game::Sprites,
     renderers::fixed::FixedRenderer,
     utils::{
         coordinates::Position,
         geometry::{Matrix3D, Vector3D},
-        ids::{ActorId, MediumId},
+        ids::ActorId,
     },
 };
-
-pub struct CameraPerspective {
-    dist: f32,
-    left: f32,
-    right: f32,
-    top: f32,
-    bottom: f32,
-}
-
-impl Default for CameraPerspective {
-    fn default() -> Self {
-        Self { dist: 0.0, left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }
-    }
-}
 
 pub struct PositionedRenderer {
     actor_id: ActorId,
@@ -31,25 +17,24 @@ pub struct PositionedRenderer {
     position: Option<Position>,
     view: Matrix3D,
     model: Matrix3D,
-    cam: CameraPerspective,
+    camera_distance: f32,
     highlight: bool,
 }
 
 impl PositionedRenderer {
     pub fn new(
         actor_id: ActorId,
-        skeleton: Skeleton,
-        skin_id: MediumId,
+        sprite: Sprite,
         position: Option<Position>,
         view: Matrix3D,
     ) -> Self {
         let mut mine = Self {
             actor_id: actor_id,
-            renderer: FixedRenderer::new(skeleton, skin_id),
+            renderer: FixedRenderer::new(sprite),
             position: None,
             view: Matrix3D::identity(),
             model: Matrix3D::identity(),
-            cam: CameraPerspective::default(),
+            camera_distance: 0.0,
             highlight: false,
         };
 
@@ -66,45 +51,46 @@ impl PositionedRenderer {
 
     pub fn change_position(&mut self, position: Position) {
         self.update_position(position);
-        self.calculate_screen_bounds();
+        self.calculate_camera_distance();
     }
 
     pub fn change_view(&mut self, view: Matrix3D) {
         self.update_view(view);
-        self.calculate_screen_bounds();
+        self.calculate_camera_distance();
     }
 
     pub fn change_position_and_view(&mut self, position: Position, view: Matrix3D) {
         self.update_position(position);
         self.update_view(view);
-        self.calculate_screen_bounds();
+        self.calculate_camera_distance();
     }
 
     pub fn unset_position(&mut self) {
         self.position = None
     }
 
+    pub fn get_sprite(&self) -> &Sprite {
+        self.renderer.get_sprite()
+    }
+
+    pub fn get_sprite_mut(&mut self) -> &mut Sprite {
+        self.renderer.get_sprite_mut()
+    }
+
     pub fn select_animation(&mut self, name: &str) {
         self.renderer.select_animation(name);
     }
 
-    pub fn is_visible(&self) -> bool {
+    pub fn has_position(&self) -> bool {
         self.position.is_some()
     }
 
     pub fn get_camera_distance(&self) -> f32 {
-        self.cam.dist
+        self.camera_distance
     }
 
     pub fn get_actor_id(&self) -> ActorId {
         self.actor_id
-    }
-
-    pub fn reacts_to(&self, x: f32, y: f32) -> bool {
-        return (self.cam.left < x)
-            && (x < self.cam.right)
-            && (self.cam.bottom < y)
-            && (y < self.cam.top);
     }
 
     pub fn render(
@@ -133,23 +119,9 @@ impl PositionedRenderer {
         self.view = view
     }
 
-    fn calculate_screen_bounds(&mut self) {
-        let interaction = self.renderer.get_skeleton().get_interaction();
-        let left = interaction.left;
-        let right = interaction.right;
-        let top = interaction.top;
-        let bottom = interaction.bottom;
-
-        let trans = &self.view * &self.model;
-        let left_bottom = &trans * Vector3D::new(left, bottom, 0.0);
-        let right_top = &trans * Vector3D::new(right, top, 0.0);
-        let center = &trans * Vector3D::new(0.0, 0.0, 0.0);
-
-        self.cam.left = left_bottom.get_x() / left_bottom.get_w();
-        self.cam.bottom = left_bottom.get_y() / left_bottom.get_w();
-        self.cam.right = right_top.get_x() / right_top.get_w();
-        self.cam.top = right_top.get_y() / right_top.get_w();
-        self.cam.dist = center.get_z() / center.get_w();
+    fn calculate_camera_distance(&mut self) {
+        let center = &self.view * &self.model * Vector3D::new(0.0, 0.0, 0.0);
+        self.camera_distance = center.get_z() / center.get_w();
     }
 
     unsafe fn setup_rendering(&self, loc_highlight: gl::types::GLint, loc_model: gl::types::GLint) {

@@ -223,7 +223,7 @@ impl Parser {
             poses.push(self.prepare_bone_pose(&bone.pose, source_ids))
         }
 
-        skeleton::Bone::new(parent_index, poses)
+        skeleton::Bone::new(parent_index, poses, bone.id.clone())
     }
 
     fn prepare_bone_pose(

@@ -1,17 +1,13 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
-use crate::utils::{
-    errors as err,
-    geometry::Matrix2D,
-    ids::{MediumId, ResourceId},
-    tile::Tile,
-};
+use crate::utils::{errors as err, geometry::Matrix2D, ids::MediumId};
 
 type BoneIndex = usize;
 
-pub const DEFAULT_ANIMATION_NAME: &str = "idle";
+pub const ANIMATION_NAME_DEFAULT: &str = "idle";
+pub const ANIMATION_NAME_HELD: &str = "held";
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Interaction {
     pub left: f32,
     pub right: f32,
@@ -25,7 +21,7 @@ impl Interaction {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Image {
     pivot: (f32, f32),
     size: (f32, f32),
@@ -34,6 +30,14 @@ pub struct Image {
 impl Image {
     pub fn new(pivot: (f32, f32), size: (f32, f32)) -> Self {
         Self { pivot, size }
+    }
+
+    pub fn get_pivot(&self) -> (f32, f32) {
+        self.pivot.clone()
+    }
+
+    pub fn get_size(&self) -> (f32, f32) {
+        self.size.clone()
     }
 }
 
@@ -68,11 +72,20 @@ impl Pose {
 pub struct Bone {
     parent_index: Option<BoneIndex>,
     poses: Vec<Pose>,
+    name: String,
 }
 
 impl Bone {
-    pub fn new(parent_index: Option<BoneIndex>, poses: Vec<Pose>) -> Self {
-        Self { parent_index, poses }
+    pub fn new(parent_index: Option<BoneIndex>, poses: Vec<Pose>, name: String) -> Self {
+        Self { parent_index, poses, name }
+    }
+
+    pub fn get_parent_index(&self) -> Option<BoneIndex> {
+        self.parent_index
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.name
     }
 
     pub fn calc_state_at(&self, moment: f32, duration: f32) -> (Matrix2D, Option<MediumId>) {
@@ -136,7 +149,7 @@ impl Bone {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Animation {
     name: String,
     duration: f32,
@@ -202,51 +215,31 @@ impl Animation {
         self.is_looped
     }
 
+    pub fn get_scale(&self) -> (f32, f32) {
+        (self.scale, self.scale)
+    }
+
+    pub fn get_scale_reversed(&self) -> (f32, f32) {
+        let scale = 1.0 / self.scale;
+        (scale, scale)
+    }
+
     pub fn get_num_layers(&self) -> usize {
         self.bones.len()
     }
 
-    pub fn tick(&self, moment: f32, skin_id: MediumId, images: &Vec<Image>) -> Vec<Tile> {
-        // Prepare bone poses. Bones are sorted in such a way that parents are always prepared
-        // before their children.
-        // TODO: Avoid memory allocation.
-        let mut info = Vec::<(Matrix2D, Option<MediumId>)>::with_capacity(self.bones.len());
-        for bone in self.bones.iter() {
-            let (mut trans, image_id) = bone.calc_state_at(moment, self.get_duration());
-            if let Some(parent_index) = bone.parent_index {
-                let (parent_trans, _) = info.get(parent_index).unwrap();
-                trans = parent_trans * trans;
-            }
-            info.push((trans, image_id));
-        }
+    pub fn get_bones(&self) -> &Vec<Bone> {
+        &self.bones
+    }
 
-        // Prepare tiles.
-        let mut tiles = Vec::<Tile>::new();
-        for &index in self.draw_order.iter() {
-            let (trans, image_id) = info.get(index).unwrap();
-            if let Some(image_id) = image_id {
-                let resource_id = ResourceId::new(skin_id, *image_id);
-                let scale = (self.scale, self.scale);
-                let image = images.get(*image_id).expect(err::SAML_NOT_EXISTING_IMAGE);
-                tiles.push(self.make_tile(resource_id, image, trans).scaled(scale));
-            }
-        }
-        tiles
+    pub fn get_draw_order(&self) -> &Vec<BoneIndex> {
+        &self.draw_order
     }
 }
 
-impl Animation {
-    fn make_tile(&self, resource_id: ResourceId, image: &Image, trans: &Matrix2D) -> Tile {
-        let pivot = (-image.pivot.0, image.pivot.1 - image.size.1);
-        let mut tile = Tile::new(resource_id, pivot, image.size);
-        tile.transform(trans);
-        tile
-    }
-}
-
+#[derive(Clone, Debug)]
 pub struct Skeleton {
-    selected_animation: String,
-    animations: std::collections::HashMap<String, Animation>,
+    animations: HashMap<String, Animation>,
     images: Vec<Image>,
     interaction: Interaction,
 }
@@ -257,53 +250,28 @@ impl Skeleton {
         images: Vec<Image>,
         interaction: Interaction,
     ) -> Self {
-        let selected_animation = DEFAULT_ANIMATION_NAME.to_string();
         let animations =
             animation_vector.drain(..).map(|anim| (anim.get_name().to_string(), anim)).collect();
-
-        Self { selected_animation, animations, images, interaction }
+        Self { animations, images, interaction }
     }
 
-    pub fn get_interaction(&self) -> &Interaction {
-        &self.interaction
+    pub fn has_animation(&self, name: &str) -> bool {
+        self.animations.contains_key(name)
     }
 
-    pub fn get_selected_animation(&self) -> &Animation {
-        self.animations
-            .get(self.selected_animation.as_str())
-            .expect(err::SAML_NOT_EXISTING_ANIMATION)
+    pub fn get_animation(&self, name: &str) -> Option<&Animation> {
+        self.animations.get(name)
     }
 
-    pub fn get_selected_animation_name(&self) -> &str {
-        &self.selected_animation
-    }
-
-    pub fn select_animation(&mut self, name: &str) -> Result<(), ()> {
-        if self.animations.contains_key(name) {
-            self.selected_animation = name.to_string();
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
-    pub fn select_default_animation(&mut self) -> Result<(), ()> {
-        self.select_animation(DEFAULT_ANIMATION_NAME)
-    }
-
-    pub fn get_animation_duration(&self) -> f32 {
-        self.get_selected_animation().get_duration()
-    }
-
-    pub fn is_looped(&self) -> bool {
-        self.get_selected_animation().is_looped()
+    pub fn get_image(&self, image_id: MediumId) -> Option<&Image> {
+        self.images.get(image_id)
     }
 
     pub fn get_max_num_layers(&self) -> usize {
         self.animations.values().map(|a| a.get_num_layers()).max().unwrap_or(0)
     }
 
-    pub fn tick(&self, moment: f32, skin_id: MediumId) -> Vec<Tile> {
-        self.get_selected_animation().tick(moment, skin_id, &self.images)
+    pub fn get_interaction(&self) -> &Interaction {
+        &self.interaction
     }
 }

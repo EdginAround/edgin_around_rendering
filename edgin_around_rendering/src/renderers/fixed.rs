@@ -1,14 +1,13 @@
 use std::time::Instant;
 
 use crate::{
-    animations::{Skeleton, DEFAULT_ANIMATION_NAME},
+    animations::{Sprite, ANIMATION_NAME_DEFAULT},
     game::Sprites,
-    utils::{defs::prelude::*, defs::SIZE_FLOAT, errors as err, ids::MediumId, tile::Tile},
+    utils::{defs::prelude::*, defs::SIZE_FLOAT, errors as err, tile::Tile},
 };
 
 pub struct FixedRenderer {
-    skeleton: Skeleton,
-    skin_id: MediumId,
+    sprite: Sprite,
     start_instant: Instant,
     vao: gl::types::GLuint,
     vbo: gl::types::GLuint,
@@ -16,9 +15,9 @@ pub struct FixedRenderer {
 }
 
 impl FixedRenderer {
-    pub fn new(skeleton: Skeleton, skin_id: MediumId) -> Self {
-        let mut mine =
-            Self { skeleton, skin_id, start_instant: Instant::now(), vao: 0, vbo: 0, ibo: 0 };
+    pub fn new(sprite: Sprite) -> Self {
+        let start_instant = Instant::now();
+        let mut mine = Self { sprite, start_instant, vao: 0, vbo: 0, ibo: 0 };
 
         unsafe {
             gl::GenVertexArrays(1, &mut mine.vao);
@@ -30,20 +29,24 @@ impl FixedRenderer {
             mine.unbind();
         }
 
-        mine.select_animation(DEFAULT_ANIMATION_NAME);
+        mine.select_animation(ANIMATION_NAME_DEFAULT);
 
         mine
     }
 
-    pub fn get_skeleton(&self) -> &Skeleton {
-        &self.skeleton
+    pub fn get_sprite(&self) -> &Sprite {
+        &self.sprite
+    }
+
+    pub fn get_sprite_mut(&mut self) -> &mut Sprite {
+        &mut self.sprite
     }
 
     pub fn select_animation(&mut self, name: &str) {
-        if name != self.skeleton.get_selected_animation_name() {
+        if name != self.sprite.get_selected_animation_name() {
             self.start_instant = Instant::now();
-            if self.skeleton.select_animation(name).is_err() {
-                self.skeleton.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
+            if self.sprite.select_animation(name).is_err() {
+                self.sprite.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
             }
         }
     }
@@ -58,15 +61,15 @@ impl FixedRenderer {
         const STRIDE: gl::types::GLint = (SIZE_POSITION + SIZE_TEX_COORD) * SIZE_FLOAT;
 
         let mut duration = (Instant::now() - self.start_instant).as_secs_f32();
-        if (!self.skeleton.is_looped()) && (self.skeleton.get_animation_duration() < duration) {
-            self.skeleton.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
+        if (!self.sprite.is_looped()) && (self.sprite.get_animation_duration() < duration) {
+            self.sprite.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
             duration = 0.0;
         }
 
         unsafe {
             self.bind();
 
-            let tiles = self.skeleton.tick(duration, self.skin_id);
+            let tiles = self.sprite.tick(duration);
             self.load_vertices(&tiles);
 
             gl::VertexAttribPointer(
@@ -176,7 +179,7 @@ impl FixedRenderer {
     }
 
     fn prepare_indices(&self) -> Vec<gl::types::GLuint> {
-        let num_layers = self.skeleton.get_max_num_layers();
+        let num_layers = self.sprite.get_max_num_layers();
         let mut result = Vec::with_capacity(num_layers * VERTICES_PER_RECT_SIZE);
         for num in 0..num_layers as gl::types::GLuint {
             for offset in [0, 1, 2, 2, 3, 0].iter() {

@@ -28,8 +28,9 @@ impl PreviewExpositor {
 
         let mut sprites = game::Sprites::new(sprite_path.into());
         let skin_id = sprites.load_skin(skin_name, &parser.get_sources());
+        let sprite = animations::Sprite::new(skeleton, skin_id);
 
-        let mut renderer = renderers::FixedRenderer::new(skeleton, skin_id);
+        let mut renderer = renderers::FixedRenderer::new(sprite);
         renderer.select_animation(animation_name);
 
         let program = graphics::prepare_entities_shader_program().expect(err::GL_SHADER_FAILED);
