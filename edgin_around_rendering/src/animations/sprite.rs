@@ -62,6 +62,14 @@ impl Sprite {
         self.select_animation(ANIMATION_NAME_DEFAULT)
     }
 
+    pub fn select_animation_or_default(&mut self, name: &str) -> Result<(), ()> {
+        if self.select_animation(name).is_err() {
+            self.select_default_animation()
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn get_animation_duration(&self) -> f32 {
         self.get_selected_animation().get_duration()
     }

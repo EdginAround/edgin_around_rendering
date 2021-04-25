@@ -1,4 +1,3 @@
-#![feature(drain_filter)]
 #![feature(stmt_expr_attributes)]
 
 pub mod animations;

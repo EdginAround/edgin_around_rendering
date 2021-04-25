@@ -6,6 +6,7 @@ use crate::{
     utils::{defs::prelude::*, defs::SIZE_FLOAT, errors as err, tile::Tile},
 };
 
+#[derive(Debug)]
 pub struct FixedRenderer {
     sprite: Sprite,
     start_instant: Instant,
@@ -193,8 +194,9 @@ impl FixedRenderer {
 impl Drop for FixedRenderer {
     fn drop(&mut self) {
         unsafe {
-            gl::DeleteBuffers(1, self.vbo as *const _);
-            gl::DeleteBuffers(1, self.ibo as *const _);
+            gl::DeleteBuffers(1, &self.ibo);
+            gl::DeleteBuffers(1, &self.vbo);
+            gl::DeleteVertexArrays(1, &self.vao);
         }
     }
 }

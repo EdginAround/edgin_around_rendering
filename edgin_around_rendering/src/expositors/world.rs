@@ -160,7 +160,7 @@ impl WorldExpositor {
     }
 
     pub fn delete_renderers(&mut self, ids: &Vec<ActorId>) {
-        self.renderers_entities.drain_filter(|renderer| ids.contains(&renderer.get_actor_id()));
+        self.renderers_entities.retain(|renderer| !ids.contains(&renderer.get_actor_id()));
     }
 
     pub fn play_animation(&mut self, actor_id: ActorId, animation_name: &str) {

@@ -11,6 +11,7 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub struct PositionedRenderer {
     actor_id: ActorId,
     renderer: FixedRenderer,
