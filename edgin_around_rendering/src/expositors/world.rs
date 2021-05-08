@@ -182,7 +182,7 @@ impl WorldExpositor {
             let target_sprite = target_renderer.get_sprite_mut();
             if let Some(mut source_sprite) = source_sprite {
                 source_sprite
-                    .select_animation(animations::ANIMATION_NAME_HELD)
+                    .select_animation_or_default(animations::ANIMATION_NAME_HELD)
                     .expect(err::SAML_NOT_EXISTING_ANIMATION);
                 target_sprite.attach_sprite(hook_name, source_sprite);
             } else {
