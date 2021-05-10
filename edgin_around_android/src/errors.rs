@@ -8,3 +8,5 @@ pub const JNI_MAKE_STRING: &str = "Failed to prepare a JNI string";
 pub const JNI_FIND_CLASS: &str = "Failed find a JNI class";
 pub const JNI_NEW_STRING: &str = "Failed to create a new JNI string";
 pub const JNI_NEW_ARRAY: &str = "Failed to create a new JNI array";
+pub const JNI_NEW_OBJECT: &str = "Failed to create a new JNI object";
+pub const JNI_CLASS_NOT_FOUND: &str = "Failed to find a JNI class";

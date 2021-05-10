@@ -9,6 +9,10 @@ pub mod utils;
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 pub fn init() -> Result<(), ()> {
+    std::panic::set_hook(Box::new(|info| {
+        log::error!("Panic: {:?}", info);
+    }));
+
     utils::graphics::init()
 }
 

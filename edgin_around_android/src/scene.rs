@@ -1,6 +1,6 @@
 use jni::{
     objects::{JObject, ReleaseMode},
-    sys::{jfloat, jobjectArray},
+    sys::{jfloat, jobject, jobjectArray},
     JNIEnv,
 };
 
@@ -9,7 +9,7 @@ use edgin_around_rendering::{
     utils::{coordinates::Point, ids::ActorId},
 };
 
-use crate::{common, errors as err};
+use crate::{common, consts, errors as err};
 
 #[no_mangle]
 #[allow(non_snake_case)]
@@ -128,6 +128,34 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_findClosest
     let result = env.new_long_array(ids.len() as i32).expect(err::JNI_NEW_ARRAY);
     env.set_long_array_region(result, 0, ids.as_slice()).expect(err::JNI_ARRAY_REGION);
     result
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_SceneBridge_getActorPosition<'a>(
+    env: JNIEnv,
+    object: JObject,
+    actor_id: common::ActorIdJni,
+) -> jobject {
+    let point = {
+        let scene = common::get_holder::<Scene>(&env, &object);
+        if let Some(actor) = scene.get_actor(actor_id as ActorId) {
+            if let Some(point) = actor.get_position() {
+                point.clone()
+            } else {
+                return std::ptr::null_mut();
+            }
+        } else {
+            return std::ptr::null_mut();
+        }
+    };
+
+    let class = env.find_class(consts::CLASS_POINT).expect(err::JNI_CLASS_NOT_FOUND);
+    let position = env
+        .new_object(class, consts::METHOD_POINT_CONSTRUCTOR_SIGNATURE, &[])
+        .expect(err::JNI_NEW_OBJECT);
+    common::set_holder(&env, &position, point);
+    return position.into_inner();
 }
 
 #[no_mangle]
