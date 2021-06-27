@@ -167,6 +167,19 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_de
 
 #[no_mangle]
 #[allow(non_snake_case)]
+pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_selectVariant(
+    env: JNIEnv,
+    object: JObject,
+    actor_id: common::ActorIdJni,
+    variant_name: JString,
+) {
+    let mut world = common::get_holder::<WorldExpositor>(&env, &object);
+    let variant_name = common::make_string(&env, variant_name).expect(err::JNI_MAKE_STRING);
+    world.play_animation(actor_id as ActorId, &variant_name)
+}
+
+#[no_mangle]
+#[allow(non_snake_case)]
 pub unsafe extern "C" fn Java_com_edgin_around_rendering_WorldExpositorBridge_playAnimation(
     env: JNIEnv,
     object: JObject,

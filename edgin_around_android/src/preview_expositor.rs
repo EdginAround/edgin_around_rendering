@@ -16,7 +16,8 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_PreviewExpositorBridge_
     sprite_dir: JString,
     skin_name: JString,
     saml_name: JString,
-    animation_name: JString,
+    variant_name: JString,
+    action_name: JString,
     width: jint,
     height: jint,
 ) {
@@ -25,14 +26,16 @@ pub unsafe extern "C" fn Java_com_edgin_around_rendering_PreviewExpositorBridge_
     let sprite_dir = common::make_string(&env, sprite_dir).expect(err::JNI_MAKE_STRING);
     let skin_name = common::make_string(&env, skin_name).expect(err::JNI_MAKE_STRING);
     let saml_name = common::make_string(&env, saml_name).expect(err::JNI_MAKE_STRING);
-    let animation_name = common::make_string(&env, animation_name).expect(err::JNI_MAKE_STRING);
+    let variant_name = common::make_string(&env, variant_name).expect(err::JNI_MAKE_STRING);
+    let action_name = common::make_string(&env, action_name).expect(err::JNI_MAKE_STRING);
     let sprite_path = std::path::Path::new(&sprite_dir);
 
     let preview = PreviewExpositor::new(
         sprite_path,
         &skin_name,
         &saml_name,
-        &animation_name,
+        &variant_name,
+        &action_name,
         (width as usize, height as usize),
     );
     common::set_holder(&env, &object, preview);

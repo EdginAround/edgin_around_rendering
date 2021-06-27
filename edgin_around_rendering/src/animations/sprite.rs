@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 
 use crate::{
-    animations::skeleton::{Animation, Image, Skeleton, ANIMATION_NAME_DEFAULT},
+    animations::{
+        skeleton::{Animation, Image, ACTION_NAME_DEFAULT, VARIANT_NAME_DEFAULT},
+        stock::Stock,
+    },
     utils::{
         errors as err,
         geometry::Matrix2D,
@@ -26,60 +29,43 @@ impl<'a> TileInfo<'a> {
 
 #[derive(Clone, Debug)]
 pub struct Sprite {
-    selected_animation: String,
-    skeleton: Skeleton,
     skin_id: MediumId,
+    stock: Stock,
+    selected_animation: Animation,
     subsprites: Subsprites,
+    selected_variant_name: String,
+    selected_action_name: String,
 }
 
 impl Sprite {
-    pub fn new(skeleton: Skeleton, skin_id: MediumId) -> Self {
-        let selected_animation = ANIMATION_NAME_DEFAULT.to_string();
-        let subsprites = Subsprites::new();
-        Sprite { selected_animation, skeleton, skin_id, subsprites }
-    }
+    pub fn new(skin_id: MediumId, stock: Stock) -> Self {
+        let animation_id = stock
+            .select(VARIANT_NAME_DEFAULT, ACTION_NAME_DEFAULT)
+            .expect(err::DEFAULT_VARIANT_AND_ACTION_FAILED);
 
-    pub fn get_selected_animation(&self) -> &Animation {
-        self.skeleton
-            .get_animation(self.selected_animation.as_str())
-            .expect(err::SAML_NOT_EXISTING_ANIMATION)
-    }
+        let animation =
+            stock.get_animation(animation_id).expect(err::DEFAULT_ANIMATION_FAILED).clone();
 
-    pub fn get_selected_animation_name(&self) -> &str {
-        &self.selected_animation
-    }
-
-    pub fn select_animation(&mut self, name: &str) -> Result<(), ()> {
-        if self.skeleton.has_animation(name) {
-            self.selected_animation = name.to_string();
-            Ok(())
-        } else {
-            Err(())
-        }
-    }
-
-    pub fn select_default_animation(&mut self) -> Result<(), ()> {
-        self.select_animation(ANIMATION_NAME_DEFAULT)
-    }
-
-    pub fn select_animation_or_default(&mut self, name: &str) -> Result<(), ()> {
-        if self.select_animation(name).is_err() {
-            self.select_default_animation()
-        } else {
-            Ok(())
+        Sprite {
+            skin_id,
+            stock,
+            selected_animation: animation,
+            subsprites: Subsprites::new(),
+            selected_variant_name: VARIANT_NAME_DEFAULT.to_string(),
+            selected_action_name: ACTION_NAME_DEFAULT.to_string(),
         }
     }
 
     pub fn get_animation_duration(&self) -> f32 {
-        self.get_selected_animation().get_duration()
+        self.selected_animation.get_duration()
     }
 
     pub fn is_looped(&self) -> bool {
-        self.get_selected_animation().is_looped()
+        self.selected_animation.is_looped()
     }
 
     pub fn get_max_num_layers(&self) -> usize {
-        self.skeleton.get_max_num_layers()
+        self.stock.get_max_num_layers()
     }
 
     pub fn attach_sprite(&mut self, hook_name: String, sprite: Sprite) {
@@ -90,8 +76,104 @@ impl Sprite {
         self.subsprites.remove(hook_name);
     }
 
+    pub fn get_selected_variant_name(&self) -> &String {
+        &self.selected_variant_name
+    }
+
+    pub fn get_selected_action_name(&self) -> &String {
+        &self.selected_action_name
+    }
+
+    pub fn select_variant(&mut self, variant_name: &str) -> Result<(), ()> {
+        if self.selected_variant_name == variant_name {
+            return Ok(());
+        }
+
+        let animation_id = self.stock.select(variant_name, &self.selected_action_name);
+        if let Some(animation_id) = animation_id {
+            if let Some(animation) = self.stock.get_animation(animation_id) {
+                self.selected_animation = animation.clone();
+                self.selected_variant_name = variant_name.to_string();
+                Ok(())
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn select_variant_or_default(&mut self, variant_name: &str) -> Result<(), ()> {
+        if self.selected_variant_name == variant_name {
+            return Ok(());
+        }
+
+        let mut animation_id = self.stock.select(variant_name, &self.selected_action_name);
+        if animation_id.is_none() {
+            animation_id = self.stock.select(VARIANT_NAME_DEFAULT, &self.selected_action_name);
+        }
+
+        if let Some(animation_id) = animation_id {
+            if let Some(animation) = self.stock.get_animation(animation_id) {
+                self.selected_animation = animation.clone();
+                self.selected_variant_name = variant_name.to_string();
+                Ok(())
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn select_action(&mut self, action_name: &str) -> Result<(), ()> {
+        if self.selected_action_name == action_name {
+            return Ok(());
+        }
+
+        let animation_id = self.stock.select(&self.selected_variant_name, action_name);
+        if let Some(animation_id) = animation_id {
+            if let Some(animation) = self.stock.get_animation(animation_id) {
+                self.selected_animation = animation.clone();
+                self.selected_action_name = action_name.to_string();
+                Ok(())
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn select_action_or_default(&mut self, action_name: &str) -> Result<(), ()> {
+        if self.selected_action_name == action_name {
+            return Ok(());
+        }
+
+        let mut animation_id = self.stock.select(&self.selected_variant_name, action_name);
+        if animation_id.is_none() {
+            animation_id = self.stock.select(&self.selected_variant_name, ACTION_NAME_DEFAULT);
+        }
+
+        if let Some(animation_id) = animation_id {
+            if let Some(animation) = self.stock.get_animation(animation_id) {
+                self.selected_animation = animation.clone();
+                self.selected_action_name = action_name.to_string();
+                Ok(())
+            } else {
+                Err(())
+            }
+        } else {
+            Err(())
+        }
+    }
+
+    pub fn select_default_action(&mut self) -> Result<(), ()> {
+        self.select_action(ACTION_NAME_DEFAULT)
+    }
+
     pub fn tick(&self, moment: f32) -> Vec<Tile> {
-        let animation = self.get_selected_animation();
+        let animation = &self.selected_animation;
         let scale = Matrix2D::scale(animation.get_scale());
         let unscale = Matrix2D::scale(animation.get_scale_reversed());
 
@@ -123,7 +205,7 @@ impl Sprite {
             } else if let Some(image_id) = info.image_id {
                 let resource_id = ResourceId::new(self.skin_id, image_id);
                 let scale = animation.get_scale();
-                let image = self.skeleton.get_image(image_id).expect(err::SAML_NOT_EXISTING_IMAGE);
+                let image = self.stock.get_image(image_id).expect(err::SAML_NOT_EXISTING_IMAGE);
                 tiles.push(self.make_tile(resource_id, image, &info.transformation).scaled(scale));
             }
         }

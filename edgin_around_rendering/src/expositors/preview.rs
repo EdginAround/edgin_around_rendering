@@ -19,19 +19,21 @@ impl PreviewExpositor {
         sprite_path: &std::path::Path,
         skin_name: &str,
         saml_name: &str,
-        animation_name: &str,
+        variant_name: &str,
+        action_name: &str,
         size: (usize, usize),
     ) -> Self {
         let saml_path = sprite_path.join(skin_name).join(saml_name);
         let parser = animations::Parser::new(&saml_path);
-        let skeleton = parser.to_skeleton();
+        let stock = parser.to_stock();
 
         let mut sprites = game::Sprites::new(sprite_path.into());
         let skin_id = sprites.load_skin(skin_name, &parser.get_sources());
-        let sprite = animations::Sprite::new(skeleton, skin_id);
+        let sprite = animations::Sprite::new(skin_id, stock);
 
         let mut renderer = renderers::FixedRenderer::new(sprite);
-        renderer.select_animation(animation_name);
+        renderer.select_variant(variant_name);
+        renderer.select_action(action_name);
 
         let program = graphics::prepare_entities_shader_program().expect(err::GL_SHADER_FAILED);
         let loc_view = graphics::get_uniform_location(program, "uniView".to_owned())

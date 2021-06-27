@@ -67,6 +67,10 @@ impl WorldExpositor {
         self.world.delete_renderers(&ids)
     }
 
+    pub fn select_variant(&mut self, actor_id: ActorId, variant_name: String) {
+        self.world.select_variant(actor_id, &variant_name)
+    }
+
     pub fn play_animation(&mut self, actor_id: ActorId, animation_name: String) {
         self.world.play_animation(actor_id, &animation_name)
     }
@@ -93,7 +97,8 @@ impl PreviewExpositor {
         sprite_dir: &str,
         skin_name: &str,
         saml_name: &str,
-        animation_name: &str,
+        variant_name: &str,
+        action_name: &str,
         size: (usize, usize),
     ) -> Self {
         let sprite_path = std::path::Path::new(sprite_dir);
@@ -101,7 +106,8 @@ impl PreviewExpositor {
             sprite_path,
             skin_name,
             saml_name,
-            animation_name,
+            variant_name,
+            action_name,
             size,
         );
         Self { preview }

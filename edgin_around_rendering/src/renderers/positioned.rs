@@ -78,8 +78,12 @@ impl PositionedRenderer {
         self.renderer.get_sprite_mut()
     }
 
-    pub fn select_animation(&mut self, name: &str) {
-        self.renderer.select_animation(name);
+    pub fn select_variant(&mut self, name: &str) {
+        self.renderer.select_variant(name);
+    }
+
+    pub fn select_action(&mut self, name: &str) {
+        self.renderer.select_action(name);
     }
 
     pub fn has_position(&self) -> bool {

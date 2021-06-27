@@ -1,25 +1,12 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::utils::{errors as err, geometry::Matrix2D, ids::MediumId};
 
 type BoneIndex = usize;
 
-pub const ANIMATION_NAME_DEFAULT: &str = "idle";
-pub const ANIMATION_NAME_HELD: &str = "held";
-
-#[derive(Clone, Debug)]
-pub struct Interaction {
-    pub left: f32,
-    pub right: f32,
-    pub top: f32,
-    pub bottom: f32,
-}
-
-impl Interaction {
-    pub fn new(left: f32, right: f32, top: f32, bottom: f32) -> Self {
-        Self { left, right, top, bottom }
-    }
-}
+pub const VARIANT_NAME_DEFAULT: &str = "default";
+pub const VARIANT_NAME_HELD: &str = "held";
+pub const ACTION_NAME_DEFAULT: &str = "idle";
 
 #[derive(Clone, Debug)]
 pub struct Image {
@@ -234,44 +221,5 @@ impl Animation {
 
     pub fn get_draw_order(&self) -> &Vec<BoneIndex> {
         &self.draw_order
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Skeleton {
-    animations: HashMap<String, Animation>,
-    images: Vec<Image>,
-    interaction: Interaction,
-}
-
-impl Skeleton {
-    pub fn new(
-        mut animation_vector: Vec<Animation>,
-        images: Vec<Image>,
-        interaction: Interaction,
-    ) -> Self {
-        let animations =
-            animation_vector.drain(..).map(|anim| (anim.get_name().to_string(), anim)).collect();
-        Self { animations, images, interaction }
-    }
-
-    pub fn has_animation(&self, name: &str) -> bool {
-        self.animations.contains_key(name)
-    }
-
-    pub fn get_animation(&self, name: &str) -> Option<&Animation> {
-        self.animations.get(name)
-    }
-
-    pub fn get_image(&self, image_id: MediumId) -> Option<&Image> {
-        self.images.get(image_id)
-    }
-
-    pub fn get_max_num_layers(&self) -> usize {
-        self.animations.values().map(|a| a.get_num_layers()).max().unwrap_or(0)
-    }
-
-    pub fn get_interaction(&self) -> &Interaction {
-        &self.interaction
     }
 }

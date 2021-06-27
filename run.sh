@@ -6,7 +6,7 @@ function usage() {
     echo ' - build_debug - builds debug version of the library'
     echo ' - build_android - builds release version of the library for four Android platforms'
     echo ' - build or build_all - builds everything'
-    echo ' - test - runs unit tests'
+    echo ' - tests - runs unit tests'
     echo ' - format - runs `rust-fmt` code formatter'
     echo ' - clean - removes all build artifacts'
 }

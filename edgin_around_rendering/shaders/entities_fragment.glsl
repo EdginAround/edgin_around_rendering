@@ -1,6 +1,6 @@
 #version 300 es
 
-const highp float highlightRatio = 0.8;
+const highp float highlightRatio = 0.5;
 const highp float fullMistDistance = 30.0;
 const highp vec3 highlightColor = vec3(1.0, 1.0, 1.0);
 const highp vec3 farColor = vec3(0.5, 0.5, 0.5);

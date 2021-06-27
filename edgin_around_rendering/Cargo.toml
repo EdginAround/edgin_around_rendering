@@ -1,6 +1,6 @@
 [package]
 name = "edgin_around_rendering"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["Wojciech Kluczka <wojciech.kluczka@gmail.com>"]
 edition = "2018"
 

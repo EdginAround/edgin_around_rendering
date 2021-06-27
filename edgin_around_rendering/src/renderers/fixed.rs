@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use crate::{
-    animations::{Sprite, ANIMATION_NAME_DEFAULT},
+    animations::{Sprite, ACTION_NAME_DEFAULT},
     game::Sprites,
     utils::{defs::prelude::*, defs::SIZE_FLOAT, errors as err, tile::Tile},
 };
@@ -30,7 +30,7 @@ impl FixedRenderer {
             mine.unbind();
         }
 
-        mine.select_animation(ANIMATION_NAME_DEFAULT);
+        mine.select_action(ACTION_NAME_DEFAULT);
 
         mine
     }
@@ -43,11 +43,17 @@ impl FixedRenderer {
         &mut self.sprite
     }
 
-    pub fn select_animation(&mut self, name: &str) {
-        if name != self.sprite.get_selected_animation_name() {
+    pub fn select_variant(&mut self, name: &str) {
+        if self.sprite.select_variant(name).is_err() {
+            log::warn!("Failed to select variant '{}'", name);
+        }
+    }
+
+    pub fn select_action(&mut self, name: &str) {
+        if name != self.sprite.get_selected_action_name() {
             self.start_instant = Instant::now();
-            if self.sprite.select_animation(name).is_err() {
-                self.sprite.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
+            if self.sprite.select_action(name).is_err() {
+                log::warn!("Failed to select action '{}'", name);
             }
         }
     }
@@ -63,7 +69,7 @@ impl FixedRenderer {
 
         let mut duration = (Instant::now() - self.start_instant).as_secs_f32();
         if (!self.sprite.is_looped()) && (self.sprite.get_animation_duration() < duration) {
-            self.sprite.select_default_animation().expect(err::DEFAULT_ANIMATION_FAILED);
+            self.sprite.select_default_action().expect(err::DEFAULT_ACTION_FAILED);
             duration = 0.0;
         }
 

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
-use super::skeleton;
+use super::{skeleton, stock};
 use crate::utils::errors as err;
 
 const DEFAULT_SCALE: f32 = 1.0;
@@ -19,11 +19,6 @@ struct SamlHoverArea {
     right: f32,
     top: f32,
     bottom: f32,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct SamlInteraction {
-    hover_area: SamlHoverArea,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -99,12 +94,25 @@ struct SamlAnimation {
     muscles: Vec<SamlMuscle>,
 }
 
+/// Determines what pair for variant and action corresponds to which animation.
+#[derive(Serialize, Deserialize, Debug)]
+struct SamlSelection {
+    /// Name of variant (state, form) of the animated object.
+    variant: String,
+
+    /// Name of action to perform.
+    action: String,
+
+    /// Corresponding animation ID.
+    animation: String,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 struct SamlSpec {
-    interaction: SamlInteraction,
     sources: Vec<SamlSource>,
     skeletons: Vec<SamlSkeleton>,
     animations: Vec<SamlAnimation>,
+    selection: Vec<SamlSelection>,
 }
 
 struct SkeletonInfo {
@@ -120,11 +128,10 @@ impl SkeletonInfo {
 
 pub struct Parser {
     source_ids: HashMap<String, usize>,
-    skeletons: HashMap<String, SkeletonInfo>,
-
-    interaction: SamlInteraction,
     sources: Vec<SamlSource>,
+    skeletons: HashMap<String, SkeletonInfo>,
     animations: Vec<SamlAnimation>,
+    selection: Vec<SamlSelection>,
 }
 
 impl Parser {
@@ -145,10 +152,10 @@ impl Parser {
 
         Self {
             source_ids: source_ids,
-            skeletons: skeletons,
-            interaction: spec.interaction,
             sources: spec.sources,
+            skeletons: skeletons,
             animations: spec.animations,
+            selection: spec.selection,
         }
     }
 
@@ -156,20 +163,29 @@ impl Parser {
         self.sources.iter().map(|source| source.name.as_str()).collect()
     }
 
-    pub fn to_skeleton(&self) -> skeleton::Skeleton {
-        let interaction = self.prepare_interaction();
-
+    pub fn to_stock(&self) -> stock::Stock {
         let mut images = Vec::with_capacity(self.sources.len());
         for source in self.sources.iter() {
             images.push(self.prepare_image(&source));
         }
 
-        let mut animations = Vec::with_capacity(self.animations.len());
+        let mut animations = HashMap::new();
         for animation in self.animations.iter() {
-            animations.push(self.prepare_animation(&animation));
+            animations.insert(animation.id.clone(), self.prepare_animation(&animation));
         }
 
-        skeleton::Skeleton::new(animations, images, interaction)
+        let mut selection: HashMap<String, HashMap<String, String>> = HashMap::new();
+        for s in self.selection.iter() {
+            if let Some(animations) = selection.get_mut(&s.variant) {
+                animations.insert(s.action.clone(), s.animation.clone());
+            } else {
+                let mut animations = HashMap::new();
+                animations.insert(s.action.clone(), s.animation.clone());
+                selection.insert(s.variant.clone(), animations);
+            }
+        }
+
+        stock::Stock::new(animations, selection, images)
     }
 }
 
@@ -180,15 +196,6 @@ impl Parser {
             bone_ids.insert(bone.id.clone(), index);
         }
         bone_ids
-    }
-
-    fn prepare_interaction(&self) -> skeleton::Interaction {
-        skeleton::Interaction::new(
-            self.interaction.hover_area.left,
-            self.interaction.hover_area.right,
-            self.interaction.hover_area.top,
-            self.interaction.hover_area.bottom,
-        )
     }
 
     fn prepare_image(&self, source: &SamlSource) -> skeleton::Image {

@@ -163,9 +163,15 @@ impl WorldExpositor {
         self.renderers_entities.retain(|renderer| !ids.contains(&renderer.get_actor_id()));
     }
 
-    pub fn play_animation(&mut self, actor_id: ActorId, animation_name: &str) {
+    pub fn play_animation(&mut self, actor_id: ActorId, action_name: &str) {
         if let Some(renderer) = self.find_renderer(actor_id) {
-            renderer.select_animation(animation_name);
+            renderer.select_action(action_name);
+        }
+    }
+
+    pub fn select_variant(&mut self, actor_id: ActorId, variant_name: &str) {
+        if let Some(renderer) = self.find_renderer(actor_id) {
+            renderer.select_variant(variant_name);
         }
     }
 
@@ -182,7 +188,7 @@ impl WorldExpositor {
             let target_sprite = target_renderer.get_sprite_mut();
             if let Some(mut source_sprite) = source_sprite {
                 source_sprite
-                    .select_animation_or_default(animations::ANIMATION_NAME_HELD)
+                    .select_variant_or_default(animations::VARIANT_NAME_HELD)
                     .expect(err::SAML_NOT_EXISTING_ANIMATION);
                 target_sprite.attach_sprite(hook_name, source_sprite);
             } else {
@@ -324,7 +330,7 @@ impl WorldExpositor {
         let saml_path = self.sprites.get_sprites_dir().join(name).join(name).with_extension("saml");
         let parser = animations::Parser::new(&saml_path);
         let skin_id = self.sprites.load_skin_if_needed(name, &parser.get_sources());
-        animations::Sprite::new(parser.to_skeleton(), skin_id)
+        animations::Sprite::new(skin_id, parser.to_stock())
     }
 
     fn update_lookat(&mut self, scene: &game::Scene) {
